@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NOAA Alert Dashboard</title>
+  <style>
+    :root {
+      --bg: #f9f9f9;
+      --text: #222;
+      --card-bg: #fff;
+      --card-border: #ccc;
+    }
+    .dark-mode {
+      --bg: #181818;
+      --text: #eee;
+      --card-bg: #2a2a2a;
+      --card-border: #555;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+    header {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+    .theme-toggle input {
+      display: none;
+    }
+    .slider {
+      width: 40px;
+      height: 20px;
+      background: #888;
+      border-radius: 10px;
+      position: relative;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+    input:checked + .slider::before {
+      transform: translateX(20px);
+      background: #ffe600;
+    }
+
+    #alerts {
+      padding: 1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-left: 6px solid var(--card-border);
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .card .details {
+      margin-top: 0.5rem;
+      display: none;
+      font-size: 0.9rem;
+    }
+
+    .card.warning { border-color: #d9534f; }
+    .card.watch { border-color: #f0ad4e; }
+    .card.advisory { border-color: #5bc0de; }
+
+    .card.open .details {
+      display: block;
+    }
+
+    #alertFilter {
+      padding: 0.4rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text);
+      margin-left: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚨 NOAA Alerts</h1>
+    <div style="display:flex;align-items:center;">
+      <label class="theme-toggle">
+        <input type="checkbox" id="toggleTheme">
+        <span class="slider"></span> 🌙
+      </label>
+      <select id="alertFilter">
+        <option value="all">All Alerts</option>
+        <option value="warning">Warnings</option>
+        <option value="watch">Watches</option>
+        <option value="advisory">Advisories</option>
+      </select>
+    </div>
+  </header>
+
+  <section id="alerts">Loading alerts...</section>
+
+  <script>
+    const alertsContainer = document.getElementById("alerts");
+
+    function getUrgencyRank(title) {
+      const t = title.toLowerCase();
+      if (t.includes("warning")) return 1;
+      if (t.includes("watch")) return 2;
+      if (t.includes("advisory")) return 3;
+      return 4;
+    }
+
+    function getUrgencyClass(title) {
+      const t = title.toLowerCase();
+      if (t.includes("warning")) return "warning";
+      if (t.includes("watch")) return "watch";
+      if (t.includes("advisory")) return "advisory";
+      return "";
+    }
+
+    document.getElementById("alertFilter").addEventListener("change", fetchAlerts);
+
+    async function fetchAlerts() {
+      try {
+        const filter = document.getElementById("alertFilter").value;
+        const res = await fetch("https://api.weather.gov/alerts/active");
+        const json = await res.json();
+        let alerts = json.features;
+
+        alerts.sort((a, b) => {
+          return getUrgencyRank(a.properties.event) - getUrgencyRank(b.properties.event);
+        });
+
+        alertsContainer.innerHTML = "";
+
+        alerts.forEach(feature => {
+          const props = feature.properties;
+          const urgencyClass = getUrgencyClass(props.event);
+
+          if (filter !== "all" && urgencyClass !== filter) return;
+
+          const card = document.createElement("div");
+          card.className = `card ${urgencyClass}`;
+          card.innerHTML = `
+            <h2>📍 Issued for: ${props.areaDesc}</h2>
+            <div class="details">
+              <p><strong>Event:</strong> ${props.event}</p>
+              <p><strong>Issued:</strong> ${new Date(props.sent).toLocaleString()}</p>
+              <p><strong>Expires:</strong> ${new Date(props.expires).toLocaleString()}</p>
+              <p>${props.description || "No description available."}</p>
+            </div>
+          `;
+          card.addEventListener("click", () => {
+            card.classList.toggle("open");
+          });
+          alertsContainer.appendChild(card);
+        });
+
+        if (alertsContainer.innerHTML.trim() === "") {
+          alertsContainer.innerHTML = "<p>No alerts matching that filter.</p>";
+        }
+      } catch (err) {
+        alertsContainer.innerHTML = `<p>Error fetching alerts: ${err}</p>`;
+      }
+    }
+
+    document.getElementById("toggleTheme").addEventListener("change", (e) => {
+      document.body.classList.toggle("dark-mode", e.target.checked);
+    });
+
+    fetchAlerts();
+  </script>
+</body>
+</html>
