@@ -2,199 +2,349 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NOAA Alert Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
   <style>
+    body {
+      font-family: "Inter", sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
     :root {
-      --bg: #f9f9f9;
-      --text: #222;
-      --card-bg: #fff;
-      --card-border: #ccc;
+      --bg: #f3f4f6;
+      --text: #1f2937;
+      --card-bg: #ffffff;
+      --card-border: #d1d5db;
     }
     .dark-mode {
-      --bg: #181818;
-      --text: #eee;
-      --card-bg: #2a2a2a;
-      --card-border: #555;
+      --bg: #111827;
+      --text: #e5e7eb;
+      --card-bg: #1f2937;
+      --card-border: #4b5563;
     }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
+    body.dark-mode {
+      background-color: var(--bg);
       color: var(--text);
-      transition: background 0.3s, color 0.3s;
     }
-    header {
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .theme-toggle {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-    }
-    .theme-toggle input {
-      display: none;
-    }
-    .slider {
-      width: 40px;
-      height: 20px;
-      background: #888;
-      border-radius: 10px;
-      position: relative;
-    }
-    .slider::before {
-      content: "";
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 16px;
-      height: 16px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.3s ease;
-    }
-    input:checked + .slider::before {
-      transform: translateX(20px);
-      background: #ffe600;
-    }
-
-    #alerts {
-      padding: 1rem;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-left: 6px solid var(--card-border);
-      margin-bottom: 1rem;
-      padding: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.3s ease, border-color 0.3s ease;
-    }
-
-    .card h2 {
-      margin: 0;
-      font-size: 1rem;
-    }
-
-    .card .details {
-      margin-top: 0.5rem;
-      display: none;
-      font-size: 0.9rem;
-    }
-
-    .card.warning { border-color: #d9534f; }
-    .card.watch { border-color: #f0ad4e; }
-    .card.advisory { border-color: #5bc0de; }
-
-    .card.open .details {
-      display: block;
-    }
-
-    #alertFilter {
-      padding: 0.4rem;
-      font-size: 1rem;
-      border-radius: 4px;
-      border: 1px solid var(--card-border);
-      background: var(--card-bg);
+    body:not(.dark-mode) {
+      background-color: var(--bg);
       color: var(--text);
-      margin-left: 1rem;
     }
   </style>
 </head>
-<body>
-  <header>
-    <h1>🚨 NOAA Alerts</h1>
-    <div style="display:flex;align-items:center;">
-      <label class="theme-toggle">
-        <input type="checkbox" id="toggleTheme">
-        <span class="slider"></span> 🌙
-      </label>
-      <select id="alertFilter">
-        <option value="all">All Alerts</option>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+  <header class="p-4 flex flex-col sm:flex-row justify-between items-center bg-gray-200 dark:bg-gray-800 shadow-md rounded-b-lg">
+    <h1 class="text-2xl sm:text-3xl font-bold flex items-center mb-4 sm:mb-0">
+      <span class="mr-2">🚨</span>
+      NOAA Alert Dashboard
+    </h1>
+    <div class="flex flex-wrap justify-center sm:justify-end items-center space-x-2 sm:space-x-4 space-y-2 sm:space-y-0">
+      <!-- Search Input -->
+      <div class="relative w-full sm:w-auto">
+        <input
+          type="text"
+          id="alertSearch"
+          placeholder="Search alerts..."
+          class="p-2 pl-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 w-full sm:w-48"
+        />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+        </svg>
+      </div>
+
+      <!-- State Filter Dropdown -->
+      <select
+        id="stateFilter"
+        class="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 w-full sm:w-auto"
+      >
+        <option value="all">All States</option>
+      </select>
+
+      <!-- Alert Type Filter Dropdown -->
+      <select
+        id="alertFilter"
+        class="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 w-full sm:w-auto"
+      >
+        <option value="all">All Types</option>
         <option value="warning">Warnings</option>
         <option value="watch">Watches</option>
         <option value="advisory">Advisories</option>
       </select>
+
+      <!-- Theme Toggle -->
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="toggleTheme" class="sr-only peer">
+        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+        <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">🌙</span>
+      </label>
     </div>
   </header>
 
-  <section id="alerts">Loading alerts...</section>
+  <main class="container mx-auto p-4">
+    <section id="alerts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></section>
+  </main>
 
   <script>
+    // Constants for API URLs
+    const GEOLOCATION_ERROR_MESSAGE = "Location access denied. Please enable location services or refresh the page.";
+    const API_NETWORK_ERROR_MESSAGE = "Failed to fetch alerts. Please check your internet connection.";
+    const NO_ALERTS_MESSAGE = "No alerts found for your selection.";
+
+    // Get DOM elements
     const alertsContainer = document.getElementById("alerts");
+    const alertFilter = document.getElementById("alertFilter");
+    const stateFilter = document.getElementById("stateFilter");
+    const alertSearch = document.getElementById("alertSearch");
+    const toggleTheme = document.getElementById("toggleTheme");
+    
+    // Hardcoded list of US states for the dropdown
+    const states = [
+        { code: "AL", name: "Alabama" }, { code: "AK", name: "Alaska" }, { code: "AZ", name: "Arizona" },
+        { code: "AR", name: "Arkansas" }, { code: "CA", name: "California" }, { code: "CO", name: "Colorado" },
+        { code: "CT", name: "Connecticut" }, { code: "DE", name: "Delaware" }, { code: "FL", name: "Florida" },
+        { code: "GA", name: "Georgia" }, { code: "HI", name: "Hawaii" }, { code: "ID", name: "Idaho" },
+        { code: "IL", name: "Illinois" }, { code: "IN", name: "Indiana" }, { code: "IA", name: "Iowa" },
+        { code: "KS", name: "Kansas" }, { code: "KY", name: "Kentucky" }, { code: "LA", name: "Louisiana" },
+        { code: "ME", name: "Maine" }, { code: "MD", name: "Maryland" }, { code: "MA", name: "Massachusetts" },
+        { code: "MI", name: "Michigan" }, { code: "MN", name: "Minnesota" }, { code: "MS", name: "Mississippi" },
+        { code: "MO", name: "Missouri" }, { code: "MT", name: "Montana" }, { code: "NE", name: "Nebraska" },
+        { code: "NV", name: "Nevada" }, { code: "NH", name: "New Hampshire" }, { code: "NJ", name: "New Jersey" },
+        { code: "NM", name: "New Mexico" }, { code: "NY", name: "New York" }, { code: "NC", name: "North Carolina" },
+        { code: "ND", name: "North Dakota" }, { code: "OH", name: "Ohio" }, { code: "OK", name: "Oklahoma" },
+        { code: "OR", name: "Oregon" }, { code: "PA", name: "Pennsylvania" }, { code: "RI", name: "Rhode Island" },
+        { code: "SC", name: "South Carolina" }, { code: "SD", name: "South Dakota" }, { code: "TN", name: "Tennessee" },
+        { code: "TX", name: "Texas" }, { code: "UT", name: "Utah" }, { code: "VT", name: "Vermont" },
+        { code: "VA", name: "Virginia" }, { code: "WA", name: "Washington" }, { code: "WV", name: "West Virginia" },
+        { code: "WI", name: "Wisconsin" }, { code: "WY", name: "Wyoming" }, { code: "AS", name: "American Samoa" },
+        { code: "GU", name: "Guam" }, { code: "MP", name: "Northern Mariana Islands" }, { code: "PR", name: "Puerto Rico" },
+        { code: "VI", name: "U.S. Virgin Islands" }
+    ];
 
-    function getUrgencyRank(title) {
-      const t = title.toLowerCase();
-      if (t.includes("warning")) return 1;
-      if (t.includes("watch")) return 2;
-      if (t.includes("advisory")) return 3;
-      return 4;
+    // Populate the state filter dropdown
+    function populateStateFilter() {
+        states.forEach(state => {
+            const option = document.createElement("option");
+            option.value = state.code;
+            option.textContent = state.name;
+            stateFilter.appendChild(option);
+        });
     }
 
-    function getUrgencyClass(title) {
-      const t = title.toLowerCase();
-      if (t.includes("warning")) return "warning";
-      if (t.includes("watch")) return "watch";
-      if (t.includes("advisory")) return "advisory";
-      return "";
+    /**
+     * Renders a loading state in the alerts container.
+     */
+    function showLoading() {
+      alertsContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center col-span-full py-10">
+          <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+          <p class="mt-4 text-xl text-gray-500 dark:text-gray-400">Fetching all alerts...</p>
+        </div>
+      `;
     }
 
-    document.getElementById("alertFilter").addEventListener("change", fetchAlerts);
+    /**
+     * Renders an error message in the alerts container.
+     * @param {string} message - The error message to display.
+     */
+    function showError(message) {
+      alertsContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center col-span-full py-10 text-center">
+          <svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <p class="mt-4 text-xl text-red-500">${message}</p>
+        </div>
+      `;
+    }
 
-    async function fetchAlerts() {
-      try {
-        const filter = document.getElementById("alertFilter").value;
-        const res = await fetch("https://api.weather.gov/alerts/active");
-        const json = await res.json();
-        let alerts = json.features;
+    /**
+     * Determines the display class for an alert based on its event type.
+     * @param {string} title - The event title.
+     * @returns {string} The CSS class for styling.
+     */
+    function getAlertClass(title) {
+      const t = title.toLowerCase();
+      if (t.includes("warning")) return "bg-red-500 text-white";
+      if (t.includes("watch")) return "bg-yellow-500 text-white";
+      if (t.includes("advisory")) return "bg-blue-500 text-white";
+      return "bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200";
+    }
 
-        alerts.sort((a, b) => {
-          return getUrgencyRank(a.properties.event) - getUrgencyRank(b.properties.event);
-        });
+    /**
+     * Determines the emoji for an alert based on its event type.
+     * @param {string} title - The event title.
+     * @returns {string} The emoji character.
+     */
+    function getAlertEmoji(title) {
+      const t = title.toLowerCase();
+      if (t.includes("warning")) return "⚠️";
+      if (t.includes("watch")) return "👀";
+      if (t.includes("advisory")) return "ℹ️";
+      return "📌";
+    }
 
-        alertsContainer.innerHTML = "";
-
-        alerts.forEach(feature => {
-          const props = feature.properties;
-          const urgencyClass = getUrgencyClass(props.event);
-
-          if (filter !== "all" && urgencyClass !== filter) return;
-
-          const card = document.createElement("div");
-          card.className = `card ${urgencyClass}`;
-          card.innerHTML = `
-            <h2>📍 Issued for: ${props.areaDesc}</h2>
-            <div class="details">
-              <p><strong>Event:</strong> ${props.event}</p>
-              <p><strong>Issued:</strong> ${new Date(props.sent).toLocaleString()}</p>
-              <p><strong>Expires:</strong> ${new Date(props.expires).toLocaleString()}</p>
-              <p>${props.description || "No description available."}</p>
-            </div>
-          `;
-          card.addEventListener("click", () => {
-            card.classList.toggle("open");
-          });
-          alertsContainer.appendChild(card);
-        });
-
-        if (alertsContainer.innerHTML.trim() === "") {
-          alertsContainer.innerHTML = "<p>No alerts matching that filter.</p>";
+    /**
+     * Sorts alerts by urgency. Warnings first, then Watches, then Advisories.
+     * @param {object} a - The first alert object.
+     * @param {object} b - The second alert object.
+     * @returns {number} The sort order.
+     */
+    function sortByUrgency(a, b) {
+      const getRank = (title) => {
+        const t = title.toLowerCase();
+        if (t.includes("warning")) return 1;
+        if (t.includes("watch")) return 2;
+        if (t.includes("advisory")) return 3;
+        return 4;
+      };
+      return getRank(a.properties.event) - getRank(b.properties.event);
+    }
+    
+    /**
+     * Fetches all active alerts from the NOAA API.
+     */
+    async function fetchAllAlerts() {
+        showLoading();
+        try {
+            const alertsRes = await fetch(`https://api.weather.gov/alerts/active`);
+            if (!alertsRes.ok) throw new Error(API_NETWORK_ERROR_MESSAGE);
+            const alertsData = await alertsRes.json();
+            
+            // Store all alerts in a global variable for client-side filtering
+            window.noaaAlerts = alertsData.features;
+            window.noaaAlerts.sort(sortByUrgency);
+            renderAlerts(window.noaaAlerts);
+        } catch (err) {
+            showError(err.message);
         }
-      } catch (err) {
-        alertsContainer.innerHTML = `<p>Error fetching alerts: ${err}</p>`;
-      }
     }
 
-    document.getElementById("toggleTheme").addEventListener("change", (e) => {
-      document.body.classList.toggle("dark-mode", e.target.checked);
+    /**
+     * Renders the alerts to the page based on the current filters.
+     * @param {array} alerts - Array of alert objects.
+     */
+    function renderAlerts(alerts) {
+      const filterValue = alertFilter.value;
+      const stateValue = stateFilter.value;
+      const searchValue = alertSearch.value.toLowerCase();
+      
+      const filteredAlerts = alerts.filter(feature => {
+        const props = feature.properties;
+        const eventTitle = props.event.toLowerCase();
+        const eventClass = getAlertClass(props.event);
+        const matchesFilter = filterValue === "all" || eventClass.includes(filterValue);
+        const matchesSearch = eventTitle.includes(searchValue) || props.areaDesc.toLowerCase().includes(searchValue) || props.headline.toLowerCase().includes(searchValue);
+        const matchesState = stateValue === "all" || props.areaDesc.includes(`, ${stateValue}`);
+        
+        return matchesFilter && matchesSearch && matchesState;
+      });
+
+      alertsContainer.innerHTML = "";
+
+      if (filteredAlerts.length === 0) {
+        alertsContainer.innerHTML = `<p class="col-span-full text-center py-10 text-lg text-gray-500 dark:text-gray-400">${NO_ALERTS_MESSAGE}</p>`;
+        return;
+      }
+      
+      filteredAlerts.forEach(feature => {
+        const props = feature.properties;
+        const alertClass = getAlertClass(props.event);
+        const alertEmoji = getAlertEmoji(props.event);
+
+        const card = document.createElement("div");
+        card.className = `cursor-pointer rounded-lg shadow-lg overflow-hidden transition-all duration-300 transform hover:scale-105 border-l-8 ${alertClass} ${getAlertClass(props.event).replace('bg-', 'border-')}`;
+        card.innerHTML = `
+          <div class="p-4 bg-white dark:bg-gray-700">
+            <h2 class="font-semibold text-lg flex items-center">
+              <span class="mr-2">${alertEmoji}</span>
+              ${props.event}
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <span class="font-medium">Issued for:</span> ${props.areaDesc}
+            </p>
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700 hidden" data-details>
+            <p class="text-sm mb-2"><strong class="font-medium">Issued:</strong> ${new Date(props.sent).toLocaleString()}</p>
+            <p class="text-sm mb-2"><strong class="font-medium">Expires:</strong> ${new Date(props.expires).toLocaleString()}</p>
+            <p class="text-sm whitespace-pre-wrap">${props.description || "No description available."}</p>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          const details = card.querySelector('[data-details]');
+          details.classList.toggle("hidden");
+        });
+        alertsContainer.appendChild(card);
+      });
+    }
+
+    // --- Main Logic and Event Listeners ---
+    document.addEventListener("DOMContentLoaded", () => {
+        populateStateFilter();
+        fetchAllAlerts();
+
+        // Use geolocation to pre-select the user's state
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    try {
+                        const pointRes = await fetch(`https://api.weather.gov/points/${latitude},${longitude}`);
+                        const pointData = await pointRes.json();
+                        const stateCode = pointData.properties.relativeLocation.properties.state;
+                        stateFilter.value = stateCode;
+                        if (window.noaaAlerts) {
+                            renderAlerts(window.noaaAlerts);
+                        }
+                    } catch (err) {
+                        console.error("Failed to determine location for pre-selection:", err);
+                    }
+                },
+                (error) => {
+                    let errorMessage = "Unknown geolocation error.";
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMessage = "User denied the request for Geolocation.";
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        errorMessage = "Location information is unavailable.";
+                    } else if (error.code === error.TIMEOUT) {
+                        errorMessage = "The request to get user location timed out.";
+                    }
+                    console.error("Geolocation error:", errorMessage);
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        }
     });
 
-    fetchAlerts();
+    // Re-render alerts whenever a filter or search changes
+    alertFilter.addEventListener("change", () => {
+        if (window.noaaAlerts) renderAlerts(window.noaaAlerts);
+    });
+    
+    stateFilter.addEventListener("change", () => {
+        if (window.noaaAlerts) renderAlerts(window.noaaAlerts);
+    });
+
+    alertSearch.addEventListener("input", () => {
+        if (window.noaaAlerts) renderAlerts(window.noaaAlerts);
+    });
+    
+    // Theme toggle logic
+    toggleTheme.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        document.body.classList.add("dark-mode");
+      } else {
+        document.body.classList.remove("dark-mode");
+      }
+    });
   </script>
 </body>
 </html>
